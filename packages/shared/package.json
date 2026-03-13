@@ -12,7 +12,7 @@
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --build",
     "type-check": "tsc --noEmit"
   },
   "devDependencies": {
