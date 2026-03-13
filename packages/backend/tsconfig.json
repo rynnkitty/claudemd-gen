@@ -2,11 +2,11 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src"
+    "rootDir": "./src",
+    "paths": {
+      "@claudemd-gen/shared": ["../shared/dist/index"]
+    }
   },
   "include": ["src/**/*"],
-  "exclude": ["dist", "node_modules"],
-  "references": [
-    { "path": "../shared" }
-  ]
+  "exclude": ["dist", "node_modules"]
 }
