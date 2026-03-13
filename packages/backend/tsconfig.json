@@ -5,7 +5,7 @@
     "rootDir": "./src",
     "baseUrl": ".",
     "paths": {
-      "@claudemd-gen/shared": ["../shared/dist/index.js"]
+      "@claudemd-gen/shared": ["../shared/dist/index.d.ts"]
     }
   },
   "include": ["src/**/*"],
