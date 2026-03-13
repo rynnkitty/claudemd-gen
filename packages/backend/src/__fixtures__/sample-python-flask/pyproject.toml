@@ -1,0 +1,13 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.mypy]
+strict = true
+python_version = "3.11"
+
+[project]
+name = "sample-python-flask"
+version = "1.0.0"
+description = "Sample Python Flask app for testing analyzers"
+requires-python = ">=3.11"

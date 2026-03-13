@@ -1,0 +1,25 @@
+{
+  "name": "sample-node-mvc",
+  "version": "1.0.0",
+  "description": "Sample MVC Node.js app for testing analyzers",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "test": "vitest run",
+    "start": "node dist/index.js",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "tsx": "^4.8.2",
+    "vitest": "^1.5.0",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.12.7",
+    "@types/cors": "^2.8.17"
+  }
+}

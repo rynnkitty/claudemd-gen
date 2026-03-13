@@ -1,0 +1,50 @@
+# ─── Stage 1: Build ──────────────────────────────────────────────────────────
+FROM node:20-slim AS builder
+
+WORKDIR /app
+
+# package.json 파일만 먼저 복사 → npm ci 레이어 캐시 최대화
+COPY package.json package-lock.json ./
+COPY packages/shared/package.json   ./packages/shared/
+COPY packages/backend/package.json  ./packages/backend/
+COPY packages/frontend/package.json ./packages/frontend/
+
+RUN npm ci
+
+# 소스 복사 (backend + shared만 필요)
+COPY tsconfig.base.json             ./
+COPY packages/shared/               ./packages/shared/
+COPY packages/backend/              ./packages/backend/
+
+# shared → backend 순서로 빌드 (TypeScript project references)
+RUN npm run build --workspace=packages/shared
+RUN npm run build --workspace=packages/backend
+
+
+# ─── Stage 2: Runtime ────────────────────────────────────────────────────────
+FROM node:20-slim AS runtime
+
+# git.util.ts의 shallowClone()이 git 바이너리를 필요로 한다
+RUN apt-get update && apt-get install -y --no-install-recommends git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# 프로덕션 의존성 설치 (workspace 심볼릭 링크 포함)
+COPY package.json package-lock.json ./
+COPY packages/shared/package.json   ./packages/shared/
+COPY packages/backend/package.json  ./packages/backend/
+COPY packages/frontend/package.json ./packages/frontend/
+
+RUN npm ci --omit=dev
+
+# 빌드 결과물만 복사
+COPY --from=builder /app/packages/shared/dist  ./packages/shared/dist
+COPY --from=builder /app/packages/backend/dist ./packages/backend/dist
+
+ENV NODE_ENV=production
+ENV PORT=4000
+
+EXPOSE 4000
+
+CMD ["node", "packages/backend/dist/server.js"]

@@ -1,0 +1,73 @@
+name: CI
+
+# PR 생성·업데이트 시에만 실행
+on:
+  pull_request:
+    branches: [main]
+
+# 같은 PR에 새 커밋이 오면 이전 실행 취소
+concurrency:
+  group: ci-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── lint, type-check, test 세 잡을 병렬 실행 ────────────────────────────────
+  # npm cache 키가 동일하므로 첫 잡이 채운 캐시를 나머지 잡이 재사용한다
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'  # package-lock.json 해시 기반 캐시
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+  type-check:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # shared를 먼저 빌드해야 backend tsconfig project reference가 통과한다
+      - name: Build shared (for project references)
+        run: npm run build --workspace=packages/shared
+
+      - name: Run tsc --noEmit
+        run: npm run type-check
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test

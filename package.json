@@ -1,0 +1,30 @@
+{
+  "name": "claudemd-gen",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=packages/frontend\" \"npm run dev --workspace=packages/backend\"",
+    "test": "vitest run --workspace vitest.workspace.ts",
+    "test:unit": "vitest run --workspace vitest.workspace.ts --reporter=verbose packages/*/src/**/*.unit.test.ts",
+    "test:integ": "vitest run --workspace vitest.workspace.ts --reporter=verbose packages/*/src/**/*.integ.test.ts",
+    "lint": "eslint \"packages/*/src/**/*.{ts,tsx}\"",
+    "type-check": "tsc --noEmit -p packages/frontend/tsconfig.json && tsc --noEmit -p packages/backend/tsconfig.json && tsc --noEmit -p packages/shared/tsconfig.json",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "npm run build --workspace=packages/frontend",
+    "build:backend": "npm run build --workspace=packages/backend"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "concurrently": "^8.2.2",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react": "^7.34.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "prettier": "^3.2.5",
+    "typescript": "^5.4.5",
+    "vitest": "^1.5.0"
+  }
+}

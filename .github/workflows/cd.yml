@@ -1,0 +1,96 @@
+name: CD
+
+# main 브랜치 push 시 실행 (PR merge 포함)
+on:
+  push:
+    branches: [main]
+
+# 동시에 여러 push가 와도 한 번에 하나만 실행 (배포 순서 보장)
+concurrency:
+  group: cd-main
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  # ── frontend / backend 이미지를 병렬 빌드·푸시 ────────────────────────────
+  build-and-push:
+    name: Build & Push (${{ matrix.image }})
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write  # GHCR 푸시 권한
+
+    strategy:
+      fail-fast: false  # 한쪽이 실패해도 다른 쪽 계속 진행
+      matrix:
+        include:
+          - image: frontend
+            dockerfile: Dockerfile.frontend
+          - image: backend
+            dockerfile: Dockerfile.backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Node.js + npm 캐시 (빌드 검증용) ───────────────────────────────────
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared
+        run: npm run build --workspace=packages/shared
+
+      - name: Verify build (${{ matrix.image }})
+        run: |
+          if [ "${{ matrix.image }}" = "frontend" ]; then
+            npm run build --workspace=packages/frontend
+          else
+            npm run build --workspace=packages/backend
+          fi
+
+      # ── Docker 빌드·푸시 ────────────────────────────────────────────────────
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 이미지명 소문자 변환 + latest · sha 태그 생성
+      # github.repository는 대소문자 혼용 가능 → GHCR 소문자 강제
+      - name: Set lowercase repository name
+        run: echo "REPO_LC=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.REPO_LC }}/${{ matrix.image }}
+          flavor: |
+            latest=true
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-,format=short
+
+      - name: Build and push ${{ matrix.image }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # GitHub Actions 캐시로 Docker 레이어 재사용 (matrix별 scope 분리)
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to:   type=gha,scope=${{ matrix.image }},mode=max
