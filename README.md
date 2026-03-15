@@ -56,6 +56,17 @@ npm run dev
 | 백엔드 API | http://localhost:4000 |
 | 헬스 체크 | http://localhost:4000/api/health |
 
+## 실행 화면
+
+### 메인 화면 — GitHub URL 입력
+![메인 화면](./01.png)
+
+### 분석 결과 — CLAUDE.md 생성
+![CLAUDE.md 결과](./02.png)
+
+### 분석 결과 — PRD.md 생성
+![PRD.md 결과](./03.png)
+
 ## 사용법
 
 1. 웹 브라우저에서 앱 접속
