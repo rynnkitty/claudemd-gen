@@ -16,8 +16,13 @@ COPY tsconfig.base.json             ./
 COPY packages/shared/               ./packages/shared/
 COPY packages/backend/              ./packages/backend/
 
-# shared → backend 순서로 빌드 (TypeScript project references)
+# shared 먼저 빌드 → dist/index.d.ts 생성
 RUN npm run build --workspace=packages/shared
+
+# shared dist 생성 확인 (실패 시 빌드 중단)
+RUN ls packages/shared/dist/
+
+# backend 빌드 (node_modules 심볼릭 링크로 shared dist 참조)
 RUN npm run build --workspace=packages/backend
 
 
@@ -25,7 +30,7 @@ RUN npm run build --workspace=packages/backend
 FROM node:20-slim AS runtime
 
 # git.util.ts의 shallowClone()이 git 바이너리를 필요로 한다
-RUN apt-get update && apt-get install -y --no-install-recommends git \
+RUN apt-get update && apt-get install -y --no-install-recommends git wget ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

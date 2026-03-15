@@ -40,6 +40,14 @@
 | 상태 관리 | Zustand | Redux, Jotai | 보일러플레이트 최소, 러닝커브 낮음 |
 | CSS | Tailwind CSS | styled-components | 반응형 기본 지원, 유틸리티 우선 |
 
+**기술적 도전과제 및 해결:**
+
+- **도전**: `packages/shared` 타입을 백엔드와 프론트엔드에서 동시에 참조할 때 TypeScript `moduleResolution: "Node16"` 에서 `.js` 확장자 요구로 빌드 오류 발생
+  - **해결**: `tsconfig.json`의 `paths`에 `@claudemd-gen/shared` → `dist/index.d.ts` 명시적 매핑 추가. `package.json`의 `exports` 필드를 `{ ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } }` 구조로 정의하여 타입과 런타임 경로 일치
+
+- **도전**: npm workspaces 환경에서 `tsc --build`(project references) 사용 시 각 패키지 빌드 순서 의존성 관리
+  - **해결**: `vitest.workspace.ts`와 CI `type-check` 잡에서 shared를 먼저 빌드(`npm run build --workspace=packages/shared`)하는 단계를 명시적으로 분리
+
 ---
 
 ### M2: 분석 엔진 ✅ 완료
@@ -66,6 +74,17 @@ Ruby: Gemfile
 PHP: composer.json
 ```
 
+**기술적 도전과제 및 해결:**
+
+- **도전**: `fs.readdir`로 재귀 탐색 시 심볼릭 링크 순환 참조 가능성 + 대용량 프로젝트에서 5,000개 파일 제한 초과 처리
+  - **해결**: `withFileTypes: true` 옵션으로 `Dirent` 객체를 활용해 심볼릭 링크를 파일로만 처리(재귀 미진입). 파일 카운터를 재귀 상태로 공유하여 `MAX_FILE_COUNT` 초과 시 즉시 탐색 중단
+
+- **도전**: Python `requirements.txt`의 다양한 버전 표기 형식(`==1.0`, `>=1.0,<2.0`, `package[extra]~=1.4`) 파싱 불일치
+  - **해결**: 정규식 `^([A-Za-z0-9_.-]+)(\[.*?\])?\s*([>=<!~^]{0,2}\s*[\d.]+.*)?$`로 패키지명·extras·버전을 분리 파싱. 빈 버전은 `"*"`로 정규화
+
+- **도전**: ArchitectureAnalyzer가 디렉토리 이름만으로 패턴을 판단할 때, `packages/` 디렉토리를 가진 monorepo와 MVC 패턴이 동시에 매칭되는 중복 탐지
+  - **해결**: monorepo 패턴을 최우선으로 평가(early-return). monorepo 감지 시 하위 패키지별로 재탐색하여 패키지 목록을 `packages[]`에 기록
+
 ---
 
 ### M3: 문서 생성기 ✅ 완료
@@ -77,6 +96,14 @@ PHP: composer.json
 - [x] PrdGenerator 구현 (8개 섹션)
 - [x] 기술 스택·아키텍처 기반 내용 자동 추론
 - [x] 단위 테스트 작성 (86개 테스트)
+
+**기술적 도전과제 및 해결:**
+
+- **도전**: 템플릿 함수가 `ProjectInfo` 전체를 인자로 받으면 테스트 작성 시 모든 필드를 채워야 해서 픽스처가 거대해지는 문제
+  - **해결**: 각 `render*` 함수가 필요한 필드만 구조 분해 인자로 받도록 시그니처 분리(`renderTechStack(techStack: TechStack)`). 테스트에서 관심사 외 필드를 제거 가능
+
+- **도전**: `scripts[]` 배열에서 `dev`, `start`, `build`, `test`, `lint` 등 우선순위 순으로 정렬된 개발 명령어 섹션 생성 시, 프로젝트마다 스크립트 이름이 상이(`dev:backend`, `serve` 등)
+  - **해결**: 우선순위 키워드 배열 `['dev', 'start', 'build', 'test', 'lint', 'type-check', 'preview']`를 정의하고, 스크립트 이름이 해당 키워드를 포함하는지 `includes()`로 매칭 후 우선순위 인덱스로 정렬
 
 ---
 
@@ -93,6 +120,17 @@ PHP: composer.json
 - [x] analyze.service.ts - 소스 타입별 분기, 임시파일 정리
 - [x] 통합 테스트 작성 (supertest)
 
+**기술적 도전과제 및 해결:**
+
+- **도전**: ZIP 업로드 시 `../../etc/passwd` 같은 path traversal 공격으로 서버 임시 디렉토리 외부 파일 덮어쓰기 가능성
+  - **해결**: `adm-zip`으로 각 엔트리를 추출 전에 `path.normalize(entry.entryName)`이 `../`를 포함하는지 검사. 위반 시 `AppError(ANALYSIS_READ_FAILED, 400)` 즉시 throw
+
+- **도전**: GitHub clone 중 네트워크 오류 발생 시 임시 디렉토리가 정리되지 않고 디스크 누수 발생
+  - **해결**: `analyze.service.ts`의 `finally` 블록에서 항상 `cleanupDir(tempDir)`를 호출. multer 업로드 파일도 동일 `finally`에서 `cleanupFile(uploadedFilePath)` 처리
+
+- **도전**: Express 4에서 `async` 라우트 핸들러의 미처리 Promise rejection이 글로벌 에러 핸들러에 도달하지 않는 문제
+  - **해결**: `asyncHandler` 래퍼 함수 구현 — `fn(req, res, next).catch(next)` 패턴으로 rejection을 Express `next(err)`로 전달
+
 ---
 
 ### M5: 테스트 & Docker ✅ 완료
@@ -108,17 +146,86 @@ PHP: composer.json
 - [x] GitHub Actions CI (lint + type-check + test 병렬)
 - [x] GitHub Actions CD (Docker 이미지 빌드·푸시, sha 태그)
 
+**기술적 도전과제 및 해결:**
+
+- **도전**: ESM 환경에서 `adm-zip`과 `child_process` 같은 Node 내장 모듈을 Vitest로 모킹할 때 `vi.mock()` 호이스팅 문제 — import 선언보다 늦게 실행되어 실제 모듈이 먼저 로드됨
+  - **해결**: `vi.hoisted()` 를 사용해 모킹 팩토리를 최상단으로 끌어올림. `file.util.mocked.unit.test.ts`에 adm-zip 모킹 케이스를 별도 파일로 분리하여 실제 파일시스템 테스트(`file.util.unit.test.ts`)와 충돌 방지
+
+- **도전**: Docker multi-stage 빌드에서 백엔드 이미지가 런타임에 `git clone`을 실행해야 하므로 최종 이미지에 `git` 바이너리가 필요했으나, node:alpine 기본 이미지에는 미포함
+  - **해결**: runtime 스테이지에서 `apk add --no-cache git`으로 git만 추가 설치. 불필요한 빌드 도구는 builder 스테이지에만 존재하도록 분리하여 이미지 크기 최소화
+
+- **도전**: nginx에서 React SPA 라우팅(`/result`, `/history` 등 클라이언트 경로) 요청 시 404 반환
+  - **해결**: `nginx.conf`에 `try_files $uri $uri/ /index.html` 설정으로 모든 정적 경로 미매칭 시 `index.html` 반환. `/api/` prefix는 `location /api/`로 upstream 백엔드로 프록시
+
 ---
 
 ### M6: 문서화 & 정리 ✅ 완료
 
 **목표**: 최종 문서화 및 코드 정리
 
-- [x] README.md 최종 업데이트
-- [x] CLAUDE.md 실제 프로젝트 반영 업데이트
+- [x] README.md — Mermaid 아키텍처 다이어그램, CI 배지, API 응답 예시 추가
+- [x] CLAUDE.md — 실제 프로젝트 반영 업데이트
+- [x] TESTING.md — 214개 테스트 케이스 목록, 커버리지 95.69% 상세 문서화
+- [x] DEVELOPMENT.md — 마일스톤별 기술적 도전과제·해결 과정, ADR 5개
 - [x] 불필요한 console.log 제거
-- [x] vitest 커버리지 thresholds 설정 (80%)
+- [x] vitest 커버리지 thresholds 설정 (lines/branches/functions/statements ≥ 80%)
 - [x] 모든 테스트 통과 확인 (214개)
+- [x] GitHub Actions CI — 커버리지 아티팩트 업로드 + GITHUB_STEP_SUMMARY 게시
+
+---
+
+## 핵심 구현 코드 스니펫
+
+### 병렬 분석기 실행 (AnalysisOrchestrator)
+
+```typescript
+// packages/backend/src/analyzers/index.ts
+const [tree, techStack, dependencies, configFiles] = await Promise.all([
+  this.structure.analyze(resolvedPath, { maxDepth: options.maxDepth ?? 5 }),
+  this.techStack.analyze(resolvedPath),
+  this.dependency.analyze(resolvedPath, { includeDevDeps: options.includeDevDeps ?? true }),
+  this.config.analyze(resolvedPath),
+]);
+// architecture는 tree에 의존하므로 직렬 실행
+const architectureInfo = this.architecture.analyze(tree);
+```
+
+### path traversal 방지 (file.util.ts)
+
+```typescript
+// packages/backend/src/utils/file.util.ts
+for (const entry of zip.getEntries()) {
+  const normalized = path.normalize(entry.entryName);
+  if (normalized.startsWith('..') || path.isAbsolute(normalized)) {
+    throw new AppError(
+      `ZIP entry path traversal detected: ${entry.entryName}`,
+      ApiErrorCode.ANALYSIS_READ_FAILED,
+      400,
+    );
+  }
+}
+zip.extractAllTo(targetDir, true);
+```
+
+### async 라우트 에러 전파 (error-handler.ts)
+
+```typescript
+// packages/backend/src/middlewares/error-handler.ts
+export function asyncHandler(fn: AsyncRequestHandler): RequestHandler {
+  return (req, res, next) => {
+    fn(req, res, next).catch(next);  // Promise rejection → Express next(err)
+  };
+}
+```
+
+### ESM 환경 vi.hoisted() 모킹 패턴 (git.util.unit.test.ts)
+
+```typescript
+// packages/backend/src/utils/git.util.unit.test.ts
+const execFileMock = vi.hoisted(() => vi.fn()); // ← import보다 먼저 실행
+vi.mock('node:child_process', () => ({ execFile: execFileMock }));
+import { shallowClone } from './git.util.js'; // ← mock이 이미 적용됨
+```
 
 ---
 
@@ -165,3 +272,8 @@ PHP: composer.json
 | 2026-03-13 | Express API 서버 구현 (M4) |
 | 2026-03-13 | Docker 환경, GitHub Actions CI/CD 구성 (M5) |
 | 2026-03-13 | 테스트 커버리지 95.69% 달성, 문서 정리 (M6) |
+| 2026-03-15 | DEVELOPMENT.md 마일스톤별 기술 도전과제 상세화 |
+| 2026-03-15 | PRD.md 경쟁 분석 및 차별화 섹션 추가 |
+| 2026-03-15 | TESTING.md 신규 작성 (214개 테스트 케이스 상세 문서화) |
+| 2026-03-15 | README.md Mermaid 아키텍처 다이어그램, API 예시, CI 배지 추가 |
+| 2026-03-15 | CI 커버리지 아티팩트 업로드 및 Job Summary 게시 추가 |

@@ -1,3 +1,37 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,700;1,9..144,300&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background: #0c0b09;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+input[type='url']:focus,
+input[type='text']:focus {
+  outline: none;
+  border-color: #c6f135 !important;
+  box-shadow: 0 0 0 3px rgba(198, 241, 53, 0.08);
+}
+
+::-webkit-scrollbar       { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #161512; }
+::-webkit-scrollbar-thumb { background: #2a2824; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #3c3a34; }
