@@ -197,6 +197,31 @@ curl -X POST http://localhost:4000/api/analyze/upload \
 
 ---
 
+## 검증 예시 프로젝트
+
+claudemd-gen의 실제 동작을 확인하기 위한 테스트용 프로젝트입니다.
+
+| 프로젝트 | 저장소 | 설명 |
+|---------|--------|------|
+| SmartMemo | [rynnkitty/SmartMemo](https://github.com/rynnkitty/SmartMemo) | claudemd-gen 분석 검증용 실험 프로젝트 |
+
+**직접 테스트해 보기:**
+
+```bash
+curl -X POST http://localhost:4000/api/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": {
+      "type": "github_url",
+      "value": "https://github.com/rynnkitty/SmartMemo"
+    }
+  }'
+```
+
+또는 UI에서 `https://github.com/rynnkitty/SmartMemo` 를 입력하여 바로 분석할 수 있습니다.
+
+---
+
 ## 프로젝트 구조
 
 ```
