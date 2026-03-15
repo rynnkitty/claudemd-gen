@@ -1,6 +1,6 @@
 # claudemd-gen
 
-[![CI](https://github.com/your-username/claudemd-gen/actions/workflows/ci.yml/badge.svg)](https://github.com/your-username/claudemd-gen/actions/workflows/ci.yml)
+[![CI](https://github.com/rynnkitty/claudemd-gen/actions/workflows/ci.yml/badge.svg)](https://github.com/rynnkitty/claudemd-gen/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/badge/coverage-95.69%25-brightgreen)](./TESTING.md)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
