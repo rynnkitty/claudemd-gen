@@ -127,6 +127,8 @@ export interface ExistingDoc {
 // 최종 분석 결과 (ProjectInfo)
 // ────────────────────────────────────────────────
 
+import type { ClaudeEnhancements } from './claude.js';
+
 export interface ProjectInfo {
   /** 프로젝트 이름 (package.json name 또는 루트 디렉토리 이름) */
   name: string;
@@ -141,4 +143,6 @@ export interface ProjectInfo {
   architecture: ArchitectureInfo;
   /** README 등 기존 문서 */
   existingDocs: ExistingDoc[];
+  /** Claude API로 보강된 섹션 (API 키 없으면 undefined) */
+  claudeEnhancements?: ClaudeEnhancements;
 }

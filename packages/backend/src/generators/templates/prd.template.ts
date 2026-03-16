@@ -22,6 +22,10 @@ export function renderPrdHeader(name: string): string {
 }
 
 export function renderProblemDef(info: ProjectInfo): string {
+  if (info.claudeEnhancements?.problemStatement) {
+    return `## 1. 문제 정의\n\n${info.claudeEnhancements.problemStatement}`;
+  }
+
   const desc = info.description ?? '(프로젝트 설명 없음)';
   const lang = info.techStack.languages[0] ?? '알 수 없는 언어';
   const runtime = info.techStack.runtime ?? '알 수 없는 런타임';

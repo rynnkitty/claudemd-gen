@@ -25,13 +25,13 @@ export class ClaudeMdGenerator {
       renderOverview(info),
       renderTechStack(info.techStack),
       renderStructure(info.structure),
-      renderArchitecture(info.architecture),
+      renderArchitecture(info.architecture, info),
       renderCommands(info.scripts),
-      renderConventions(info.configFiles, info.techStack),
+      renderConventions(info.configFiles, info.techStack, info.claudeEnhancements?.conventionGuidelines),
       renderKeyFiles(info.entryPoints, info.configFiles),
       renderDependencies(info.dependencies),
       renderEnvVars(info.techStack),
-      renderConstraints(),
+      renderConstraints(info.claudeEnhancements?.constraints),
     ];
 
     // 각 섹션 사이에 빈 줄 두 개, 문서 끝에 개행 하나

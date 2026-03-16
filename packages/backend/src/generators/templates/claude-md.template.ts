@@ -26,7 +26,10 @@ export function renderHeader(name: string): string {
 }
 
 export function renderOverview(info: ProjectInfo): string {
-  const desc = info.description ?? 'TODO: 프로젝트 설명을 추가하세요.';
+  const desc =
+    info.claudeEnhancements?.projectPurpose ??
+    info.description ??
+    'TODO: 프로젝트 설명을 추가하세요.';
   const primaryLang = info.techStack.languages[0] ?? '-';
   const archLabel = formatArchPattern(info.architecture.pattern);
 
@@ -64,7 +67,18 @@ export function renderStructure(tree: DirectoryTree, maxDepth = 3): string {
   return `## 디렉토리 구조\n\n\`\`\`\n${ascii}\n\`\`\``;
 }
 
-export function renderArchitecture(arch: ArchitectureInfo): string {
+export function renderArchitecture(arch: ArchitectureInfo, info?: ProjectInfo): string {
+  if (info?.claudeEnhancements?.architectureDescription) {
+    const label = formatArchPattern(arch.pattern);
+    return [
+      `## 아키텍처`,
+      '',
+      `**패턴**: ${label}`,
+      '',
+      info.claudeEnhancements.architectureDescription,
+    ].join('\n');
+  }
+
   const label = formatArchPattern(arch.pattern);
   const lines: string[] = [`## 아키텍처`, '', `**패턴**: ${label}`];
 
@@ -126,7 +140,11 @@ export function renderCommands(scripts: ScriptInfo[]): string {
   return `## 개발 명령어\n\n\`\`\`bash\n${lines.join('\n').trimEnd()}\n\`\`\``;
 }
 
-export function renderConventions(configFiles: ConfigFile[], techStack: TechStack): string {
+export function renderConventions(configFiles: ConfigFile[], techStack: TechStack, claudeGuidelines?: string): string {
+  if (claudeGuidelines) {
+    return `## 코딩 컨벤션\n\n${claudeGuidelines}`;
+  }
+
   const lines: string[] = ['## 코딩 컨벤션', ''];
 
   // TypeScript
@@ -297,7 +315,10 @@ export function renderEnvVars(techStack: TechStack): string {
   return lines.join('\n').trimEnd();
 }
 
-export function renderConstraints(): string {
+export function renderConstraints(claudeConstraints?: string): string {
+  if (claudeConstraints) {
+    return `## 알려진 제약사항\n\n${claudeConstraints}`;
+  }
   return `## 알려진 제약사항
 
 <!-- TODO: 알려진 기술적 제약사항이나 한계를 여기에 추가하세요 -->`;

@@ -12,10 +12,12 @@ import {
   cleanupFile,
   extractZip,
 } from '../utils/file.util.js';
+import { createClaudeEnhancementService } from './claude.service.js';
 
 const orchestrator = new AnalysisOrchestrator();
 const claudeMdGenerator = new ClaudeMdGenerator();
 const prdGenerator = new PrdGenerator();
+const claudeService = createClaudeEnhancementService();
 
 export interface AnalyzeServiceInput {
   request: AnalyzeRequest;
@@ -64,8 +66,17 @@ export async function analyzeProject(
   // ── 분석 + 생성 ────────────────────────────────────────────────────────────
 
   try {
-    const { projectInfo, analysisTimeMs, fileCount } =
+    const { projectInfo: rawProjectInfo, analysisTimeMs, fileCount } =
       await orchestrator.analyze(projectPath, request.options ?? {});
+
+    // Claude API로 보강 (API 키 없으면 정적 분석 결과 그대로 사용)
+    let projectInfo = rawProjectInfo;
+    if (claudeService !== null) {
+      const enhancements = await claudeService.enhance(rawProjectInfo);
+      if (enhancements !== null) {
+        projectInfo = { ...rawProjectInfo, claudeEnhancements: enhancements };
+      }
+    }
 
     const claudeMd = claudeMdGenerator.generate(projectInfo);
     const prdMd = prdGenerator.generate(projectInfo);
