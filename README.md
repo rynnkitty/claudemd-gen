@@ -11,13 +11,14 @@
 
 AI 코딩 어시스턴트(Claude Code 등)가 프로젝트를 정확히 이해하려면 `CLAUDE.md` 같은 컨텍스트 파일이 필요합니다. 하지만 이 파일을 수동으로 작성하고 최신 상태로 유지하는 것은 번거롭습니다.
 
-**claudemd-gen**은 프로젝트 코드를 정적 분석하여 구조, 기술 스택, 의존성, 아키텍처 패턴을 자동으로 파악하고, 즉시 사용 가능한 CLAUDE.md를 생성합니다. LLM API 없이 오프라인에서도 동작합니다.
+**claudemd-gen**은 프로젝트 코드를 정적 분석하여 구조, 기술 스택, 의존성, 아키텍처 패턴을 자동으로 파악하고, 즉시 사용 가능한 CLAUDE.md를 생성합니다. API 키 없이도 오프라인 정적 분석만으로 동작하며, `ANTHROPIC_API_KEY`를 설정하면 Claude API가 문서 내용을 추가로 보강합니다.
 
 ## 주요 기능
 
 - **다양한 입력**: GitHub URL, 로컬 경로, ZIP 업로드
 - **자동 분석**: 디렉토리 구조, 기술 스택(7개 언어), 의존성, 설정 파일, 아키텍처 패턴 감지
 - **문서 생성**: CLAUDE.md (11개 섹션) + PRD 초안 (10개 섹션) 동시 생성
+- **AI 보강** _(선택)_: `ANTHROPIC_API_KEY` 설정 시 Claude API가 프로젝트 목적·아키텍처 설명·컨벤션·제약사항 등 5개 섹션을 자동으로 보완
 - **실시간 편집**: 생성된 문서를 브라우저에서 바로 수정
 - **내보내기**: Markdown 복사 / 파일 다운로드
 
@@ -63,7 +64,16 @@ flowchart TD
             PRG["PrdGenerator\n10개 섹션 렌더링"]
         end
 
-        SA & TA & DA & CA & AA -->|ProjectInfo| CMG & PRG
+        SA & TA & DA & CA & AA -->|ProjectInfo| Enhance
+
+        subgraph Enhancement["AI 보강 (선택적)"]
+            CE["ClaudeEnhancementService\nANTHROPIC_API_KEY 있을 때만 실행\nclaude-opus-4-6 → JSON 응답"]
+        end
+
+        Enhance["ProjectInfo 조합"] -->|"API 키 있음"| CE
+        CE -->|"ClaudeEnhancements\n(실패 시 null fallback)"| Merge["보강된 ProjectInfo"]
+        Enhance -->|"API 키 없음"| Merge
+        Merge --> CMG & PRG
     end
 
     CMG & PRG -->|"AnalyzeResponse\n{ projectInfo, generatedFiles, metadata }"| UI
@@ -77,6 +87,7 @@ flowchart TD
 |--------|------|
 | Frontend | React 18, TypeScript, Tailwind CSS, Vite 5 |
 | Backend | Node.js 20, Express 4, TypeScript |
+| AI 보강 | Anthropic SDK (`@anthropic-ai/sdk`), claude-opus-4-6 |
 | 공유 타입 | npm workspaces (모노레포) |
 | 테스트 | Vitest, supertest (커버리지 **95.69%**, 214개 테스트) |
 | 인프라 | Docker, Docker Compose, nginx |
@@ -89,12 +100,17 @@ flowchart TD
 ### Docker로 실행 (권장)
 
 ```bash
-git clone https://github.com/your-username/claudemd-gen.git
+git clone https://github.com/rynnkitty/claudemd-gen.git
 cd claudemd-gen
 docker compose up
 ```
 
 브라우저에서 `http://localhost:3000` 접속
+
+> **Claude API 보강 활성화 (선택)**: `ANTHROPIC_API_KEY` 환경변수를 설정하면 Claude API가 생성 문서 품질을 향상시킵니다.
+> ```bash
+> ANTHROPIC_API_KEY=sk-ant-... docker compose up
+> ```
 
 ### 로컬 개발 환경
 
@@ -114,6 +130,30 @@ npm run dev
 | 프론트엔드 (Docker) | http://localhost:3000 |
 | 백엔드 API | http://localhost:4000 |
 | 헬스 체크 | http://localhost:4000/api/health |
+
+---
+
+## Claude API 보강
+
+`ANTHROPIC_API_KEY` 환경변수가 설정된 경우, 정적 분석 완료 후 Claude API(`claude-opus-4-6`)가 자동으로 호출되어 다음 5개 섹션을 보완합니다.
+
+| 섹션 | 설명 |
+|------|------|
+| `projectPurpose` | 프로젝트 목적 — 2~3문장 자연어 설명 |
+| `architectureDescription` | 아키텍처 레이어별 역할 + 데이터 흐름 (마크다운) |
+| `conventionGuidelines` | 기술 스택 기반 코딩 컨벤션 가이드라인 |
+| `problemStatement` | PRD 문제 정의 — 배경 / 해결 문제 / 타겟 사용자 |
+| `constraints` | 기술적 제약사항 (마크다운 불릿) |
+
+**동작 방식:**
+- API 키가 없거나 호출이 실패해도 정적 분석 결과가 그대로 사용됩니다 (graceful fallback).
+- 로컬 개발 시 `.env` 파일 또는 셸 환경변수로 설정합니다.
+
+```bash
+# 로컬 개발 환경
+export ANTHROPIC_API_KEY=sk-ant-...
+npm run dev
+```
 
 ---
 
